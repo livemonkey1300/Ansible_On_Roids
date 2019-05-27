@@ -14,8 +14,8 @@ compute
 [all:vars]
 ansible_connection=ssh
 ansible_user=root
-ansible_ssh_pass=DNSt3c4!
-mysql_root_password = SudoPass10022#!
+ansible_ssh_pass=NoPassword135
+mysql_root_password = NoPassword135
 RABBIT_PASS = rabbit123
 ADMIN_PASS = adminP123#!
 KEYSTONE_DBPASS = keystoneP123#!
