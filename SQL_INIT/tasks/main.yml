@@ -1,0 +1,209 @@
+---
+# tasks file for SQL_INIT
+
+- name: Create SetupLocation
+  win_file:
+    path: "{{ SetupLocation }}"
+    state: directory
+  register: C_SetupLocation
+
+- name: Check if SQL setup exe exists
+  win_stat:
+    path: "{{ SetupLocation }}\\setup.exe"
+  register: stat_file
+
+- name: DELETE SQL directory
+  win_file:
+    path: "{{ DRIVE  + initconfig[item] }}"
+    state: absent
+  when: stat_file.stat.exists == False
+  with_items: "{{ initconfig }}"
+  register: D_SQL_directory
+
+- name: Create SQLUpdates directory
+  win_file:
+    path: "{{ DRIVE  + SQLUpdates }}"
+    state: directory
+  register: C_SQLUpdates_directory
+
+- name: Create SQL directory
+  win_file:
+    path: "{{ DRIVE  + initconfig[item] }}"
+    state: directory
+  with_items: "{{ initconfig }}"
+  register: C_SQL_directory
+
+- name: Copy SQL configuration INIT File
+  template:
+    src: ConfigurationFile.j2
+    dest: "{{ SetupLocation }}\\ConfigurationFile.ini"
+  register: CP_Configuration_INIT
+
+- name: Directory LOG
+  debug:
+    msg: "{{ item }}"
+  with_items:
+    - "{{D_SQL_directory}}"
+    - "{{C_SQL_directory}}"
+    - "{{C_SetupLocation}}"
+    - "{{CP_Configuration_INIT}}"
+
+
+- name: Download SQL if setup is not there
+  win_get_url:
+    url: "{{ SQLurl + SQLFile }}"
+    dest: "{{ SetupLocation + SQLFile }}"
+  when: stat_file.stat.exists == False
+  register: SQL_stat_file
+
+- name: Unzip SQL if setup is not there
+  win_unzip:
+    src: "{{ SetupLocation + SQLFile }}"
+    dest: "{{ SetupLocation }}"
+    delete_archive: yes
+  when: stat_file.stat.exists == False
+  register: Unzip_SQL_stat_file
+
+- name: SQL setup download log
+  debug:
+    msg: "{{ item }}"
+  with_items:
+    - "{{stat_file}}"
+    - "{{SQL_stat_file}}"
+    - "{{Unzip_SQL_stat_file}}"
+
+- name: Check if SSMS setup exe exists
+  win_stat:
+    path: "{{ SetupLocation + SSMSFile }}"
+  register: stat_file
+
+- name: Download SSMS if setup is not there
+  win_get_url:
+    url: "{{ SSMSurl }}"
+    dest: "{{ SetupLocation + SSMSFile }}"
+  when: stat_file.stat.exists == False
+  register: SSMS_stat_file
+
+- name: SQL setup download log
+  debug: msg="{{ stat_file }}  {{SSMS_stat_file}}"
+
+
+- name: Check if SQL was setup
+  win_stat:
+    path: "{{ SetupLocation + CHECK }}"
+  register: setup_stat_file
+
+
+- name: Install SQL
+  win_command: 'setup.exe /ConfigurationFile=ConfigurationFile.ini'
+  args:
+    chdir: "{{ SetupLocation }}"
+  when: setup_stat_file.stat.exists == False
+  ignore_errors: True
+  register: Install_SQL
+
+
+- name: Check SQL if not error found
+  template:
+    src: check.j2
+    dest: "{{ SetupLocation + CHECK }}"
+  when: not Install_SQL.failed
+  register: CK_SQL
+
+
+- name: SQL Installed
+  debug:
+    msg: "{{ item }}"
+  with_items:
+    - "{{setup_stat_file}}"
+    - "{{Install_SQL}}"
+    - "{{CK_SQL}}"
+
+
+#
+# - name: getting list of foobar processes with changed_when
+#
+#
+# - name: Download SQL if setup is not there
+#   win_get_url:
+#     url: "{{ SQLurl + SQLFile }}"
+#     dest: "{{ SetupLocation + SQLFile }}"
+#   when: stat_file.stat.exists == False
+#   register: SQL_stat_file
+#
+# - name: Install SQL
+#   win_command: 'setup.exe /ConfigurationFile=ConfigurationFile.ini'
+#   args:
+#     chdir: "{{ SetupLocation }}"
+#   ignore_errors: True
+#   register: Install_SQL
+#
+# - name: Install SQL
+#   win_command: 'setup.exe /ConfigurationFile=ConfigurationFile.ini'
+#   args:
+#     chdir: "{{ SetupLocation }}"
+#   ignore_errors: True
+#   register: Install_SQL
+#
+#
+#
+# - name: Install SQL  log
+#   debug: msg="{{ Install_SQL }}"
+
+# SetupLocation: "C:\\temp\\WindowsSQL\\"
+# SQLurl: http://10.100.1.5/
+# SQLFile: WindowsSQL.zip
+#
+#
+# - name: Download SQL Setup
+#   win_get_url:
+#     url: https://download.microsoft.com/download/3/1/D/31D734E0-BFE8-4C33-A9DE-2392808ADEE6/SSMS-Setup-ENU.exe
+#     dest: "{{ tmpdir }}/SSMS-Setup-ENU.exe"
+#
+#
+# - name: Create SQL directory Log
+#   debug: msg="{{ nf }}"
+#
+# - name: Install application
+#   win_command: 'setup.exe /ConfigurationFile=ConfigurationFile.ini'
+#   args:
+#     chdir: "{{ SetupLocation }}"
+#   ignore_errors: True
+#   register: st
+#
+# - name: Create SQL directory Log
+#   ignore_errors: True
+#   debug: msg="{{ st }}"
+#
+# - name: Install application and override expected return codes
+#   win_package:
+#     path: https://download.microsoft.com/download/3/1/D/31D734E0-BFE8-4C33-A9DE-2392808ADEE6/SSMS-Setup-ENU.exe
+#     product_id: SSMS
+#     arguments: '/Install /Quiet /Norestart'
+#     state: present
+#     expected_return_code: [0, 2, 666, 3010]
+#
+# - name: Download SSMS Setup
+#   win_get_url:
+#     url: https://download.microsoft.com/download/3/1/D/31D734E0-BFE8-4C33-A9DE-2392808ADEE6/SSMS-Setup-ENU.exe
+#     dest: "{{ tmpdir }}/SSMS-Setup-ENU.exe"
+#
+# - name : Copy SQL management studio Installer Script
+#   template:
+#     src: ssms_install.j2
+#     dest: "{{ tmpdir }}/ssms_install.ps1"
+#   register: ssms_install_log
+#
+# - debug : msg="{{ssms_install_log}}"
+#
+# - name: Run SQL management studio Installer Script
+#   win_command: "powershell.exe -ExecutionPolicy ByPass -File {{ tmpdir }}/ssms_install.ps1"
+#   ignore_errors: True
+
+# - name: Install application and override expected return codes
+#   win_package:
+#     path: "{{ SetupLocation }}\\Setup.exe"
+#     product_id: MSSQL
+#     arguments: ' /ConfigurationFile=ConfigurationFile.ini'
+#     state: present
+#     expected_return_code: [0, 666, 3010 ]

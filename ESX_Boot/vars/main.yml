@@ -1,0 +1,6 @@
+---
+# vars file for ESX_Boot
+vcenter_hostname : 10.100.1.4
+vcenter_username : root
+vcenter_password : Supp0rtt34m
+esxi_hostname : ESXI-DEV

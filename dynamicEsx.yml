@@ -1,0 +1,13 @@
+- hosts: 127.0.0.1
+  connection: local
+  become: yes
+  tasks:
+    - name: ESX '{{ PackName }}'
+      include_role:
+        name: '{{ PackName }}'
+      when:
+        - vcenter_hostname is defined
+        - vcenter_username is defined
+        - vcenter_password is defined
+        - datacenter is defined
+        - cluster is defined

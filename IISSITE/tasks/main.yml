@@ -1,0 +1,91 @@
+---
+# tasks file for IISSITE
+- name: Vars show
+  debug: msg="{{ application }}"
+
+# create directory structure
+- name: Create IIS directory
+  win_file:
+    path : "{{ item.physical_path }}"
+    state : directory
+  when: item.state != "absent"
+  with_items: "{{ application }}"
+
+- name: Delete IIS directory
+  win_file:
+    path : "{{ item.physical_path }}"
+    state : absent
+  when: item.state == "absent"
+  with_items: "{{ application }}"
+
+- name: Configure Web Site
+  win_iis_website:
+    name: "{{ item.name }}"
+    state: "{{ item.state }}"
+    port: 80
+    ip: '*'
+    hostname: "{{ item.hostname }}"
+    application_pool: "{{ item.name }}"
+    physical_path: "{{ item.physical_path }}"
+    parameters: logfile.directory:C:\sites\logs
+  with_items: "{{ application }}"
+  register: website
+
+- name: Website Log
+  debug: msg="{{ website }}"
+
+- name: Configure AppPool
+  win_iis_webapppool:
+    name: "{{ item.name }}"
+    state: "restarted"
+    attributes:
+      managedRuntimeVersion: v4.0
+  when: item.state != "absent"
+  with_items: "{{ application }}"
+
+
+- name: Grab application cert
+  win_get_url:
+    url: "{{ IISurl }}"
+    dest: "C:\\Users\\Default\\Desktop\\{{ IISFile }}"
+
+- name: import pfx certificate that is password protected
+  win_certificate_store:
+    path: "C:\\Users\\Default\\Desktop\\{{ IISFile }}"
+    state: present
+    password: "{{ CertPassword }}"
+  register: pfxtumb
+
+
+# - name : Copy variable file
+#   template:
+#     src: index.j2
+#     dest: "{{ item.physical_path }}\\index.html"
+#   with_items: "{{ application }}"
+
+- name: Grab application zip
+  win_get_url:
+    url: "{{ zipurl }}"
+    dest: "{{ item.physical_path }}\\{{ zipdest }}"
+  when: item.state != "absent"
+  with_items: "{{ application }}"
+
+- name: Unzip application zip
+  win_unzip:
+    src: "{{ item.physical_path }}\\{{ zipdest }}"
+    dest: "{{ item.physical_path }}"
+  when: item.state != "absent"
+  with_items: "{{ application }}"
+
+
+- name: Website http/https bidings
+  win_iis_webbinding:
+    name: "{{ item.name }}"
+    host_header: "{{ item.hostname }}"
+    protocol: https
+    port: 443
+    ip: '*'
+    state: present
+    certificate_hash: "{{pfxtumb.thumbprints[0]}}"
+  when: item.state != "absent"
+  with_items: "{{ application }}"

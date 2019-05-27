@@ -1,0 +1,26 @@
+---
+# vars file for package.test
+
+SetupLocation: 'C:\InstallationFiles\Package'
+
+REPO: http://10.100.1.5/
+PackageFile: CaseWare_Monitor.zip
+CERT: '\Monitor.ScreeningService\cert\localhost.pfx'
+CERTPASSWORD : yA801312
+
+AmlService_dir: 'C:\MonitorPlugins\ApplicationServices\AmlService\'
+AmlService_traget:
+  - Newtonsoft.Json.dll
+  - Monitor.AmlService.dll.config
+
+RouterService_dir: 'C:\MonitorPlugins\RoutingServices\RouterService\'
+RouterService_traget:
+  - Monitor.RoutingService.dll
+
+ApplicationServicesHost_dir: 'C:\Windows\Microsoft.NET\assembly\GAC_64\Monitor.ApplicationServicesHost\'
+ApplicationServicesHost_traget:
+  - Monitor.ApplicationServicesHost.dll
+
+SharedServices_dir: 'C:\Windows\Microsoft.NET\assembly\GAC_64\Monitor.SharedServices\'
+SharedServices_traget:
+  - Monitor.Monitor.SharedServices.dll

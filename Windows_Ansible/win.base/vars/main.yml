@@ -1,0 +1,16 @@
+---
+# vars file for win.base
+
+repof :
+  878c45095c766855ff1e888c692f6c69 :
+    name : 878c45095c766855ff1e888c692f6c69.zip
+    roots : http://web02.dnsnetworks.ca/downloads/
+    loc : C:/temp/
+    user : Team
+    pass : DNS135
+  SQL_Svr_Standard_Edtn_2016w_SP1_64Bit_ENG.ISO :
+    name : 	SQL_Svr_Standard_Edtn_2016w_SP1_64Bit_ENG.ISO
+    roots : http://web02.dnsnetworks.ca/downloads/
+    loc : C:/temp/
+    user : Team
+    pass : DNS135

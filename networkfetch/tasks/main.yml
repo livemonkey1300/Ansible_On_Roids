@@ -1,0 +1,26 @@
+---
+# tasks file for networkfetch
+- name: install needed network manager libs
+  yum:
+     name: '{{ item }}'
+     state: installed
+  with_items:
+      - NetworkManager-glib
+      - NetworkManager-libnm-devel
+      - libnma
+      - libnma-devel
+      - nm-connection-editor.x86_64
+      - libsemanage-python
+      - policycoreutils-python
+
+- set_fact:
+   ansible_interfaces: "{{ hostvars[inventory_hostname]['ansible_interfaces']}}"
+
+- name: find interface facts
+  debug:
+      msg: "{{ hostvars[inventory_hostname]['ansible_%s' | format(item)] }}"
+  with_items: "{{ ansible_interfaces }}"
+  when: "{{ 'ansible_%s' | format(item) in  hostvars[inventory_hostname] }}"
+
+# - debug: msg="{{item.ansible_facts.interfaces}}"
+#   with_items: "{{ foo_result.results }}"

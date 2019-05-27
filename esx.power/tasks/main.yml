@@ -1,0 +1,12 @@
+---
+# tasks file for esx.power
+
+- name: Rename a virtual machine (requires the virtual machine's uuid)
+  vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: no
+    uuid: "{{ vm_uuid }}"
+    state: "{{ Power }}"
+  delegate_to: localhost

@@ -1,0 +1,21 @@
+---
+# vars file for SQL_INIT
+
+SetupLocation: "C:\\temp\\WindowsSQL\\"
+DRIVE: 'C:\'
+tmpdir: C:/temp
+SQLUpdates: 'SQLUpdates'
+initconfig :
+ SQLTEMPDBDIR: 'MSSQL\TempDB'
+ SQLUSERDBDIR: 'MSSQL\Data'
+ SQLUSERDBLOGDIR: 'MSSQL\Log'
+ SQLBACKUPDIR: 'MSSQL\Backup'
+ INSTALLSQLDATADIR: 'MSSQL\Data'
+
+SQLurl: http://10.100.1.5/
+SQLFile: WindowsSQL.zip
+
+SSMSurl: https://download.microsoft.com/download/3/1/D/31D734E0-BFE8-4C33-A9DE-2392808ADEE6/SSMS-Setup-ENU.exe
+SSMSFile: SSMS-Setup-ENU.exe
+
+CHECK: check.txt

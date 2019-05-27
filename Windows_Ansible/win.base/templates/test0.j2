@@ -1,0 +1,43 @@
+param (
+   [string]$root = "http://web02.dnsnetworks.ca/downloads/",
+   [string]$pass = "password",
+   [string]$dir = 'C:\temp\',
+   [string]$user = "access" ,
+   [string]$fileName  = "win2012r2std.vhdx"
+)
+
+$file = "$dir/$fileName"
+$url = "$root$fileName"
+$Timeout=10000000
+$bufSize=10000
+
+$cred = New-Object System.Net.NetworkCredential($user, $pass)
+
+$webRequest = [System.Net.HttpWebRequest]::Create($url)
+$webRequest.Timeout = $timeout
+$webRequest.Method = "POST"
+$webRequest.ContentType = "application/data"
+$webRequest.AllowWriteStreamBuffering=$false
+$webRequest.SendChunked=$true # needed by previous line
+$webRequest.Credentials = $cred
+
+$requestStream = $webRequest.GetRequestStream()
+$fileStream = [System.IO.File]::OpenRead($file)
+$chunk = New-Object byte[] $bufSize
+  while( $bytesRead = $fileStream.Read($chunk,0,$bufsize) )
+  {
+    $requestStream.write($chunk, 0, $bytesRead)
+    $requestStream.Flush()
+  }
+
+$responceStream = $webRequest.getresponse()
+$status = $webRequest.statuscode
+
+$FileStream.Close()
+$requestStream.Close()
+$responceStream.Close()
+
+$responceStream
+$responceStream.GetResponseHeader("Content-Length")
+$responceStream.StatusCode
+$status

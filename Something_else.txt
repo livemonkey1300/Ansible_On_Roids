@@ -1,0 +1,1 @@
+<strong>DO : The same example as above, but using a symbolic mode equivalent to 0644</strong></br>

@@ -1,0 +1,5 @@
+- hosts: all
+  tasks:
+    - name: Packages '{{ PackName }}'
+      include_role:
+        name: '{{ PackName }}'

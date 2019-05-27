@@ -1,0 +1,151 @@
+---
+# tasks file for package.test
+
+- name: Check if Package Location exists
+  win_stat:
+    path: "{{ SetupLocation }}"
+  register: stat_file
+
+- name: Create Package Location If Does Not Exist
+  win_file:
+    path: "{{ SetupLocation }}"
+    state: directory
+  register: C_SetupLocation
+
+- name: Download Packages To location
+  win_get_url:
+    url: "{{ REPO + PackageFile }}"
+    dest: "{{ SetupLocation }}\\{{PackageFile}}"
+    force: yes
+  register: DPTL
+
+- name: Extracting Packages
+  win_unzip:
+    src: "{{ SetupLocation }}\\{{PackageFile}}"
+    dest: "{{ SetupLocation }}"
+    force: yes
+  register: EXPCK
+
+- name: Import localhost pfx certificate with password
+  win_certificate_store:
+    path: "{{ SetupLocation + CERT }}"
+    state: present
+    password: "{{ CERTPASSWORD }}"
+    store_name: "{{ item }}"
+  register: pfxtumb
+  with_items:
+    - Root
+    - My
+
+- name: Folders Monitor 'IdentityService' and ScreeningService
+  win_copy:
+    src: "{{ SetupLocation + item }}"
+    dest: 'C:\inetpub\wwwroot\'
+    remote_src: yes
+  register: local_folder_copy
+  with_items:
+    - '\Monitor.IdentityService'
+    - '\Monitor.ScreeningService'
+
+- name: NetCore AppPool
+  win_iis_webapppool:
+    name: NetCore
+    state: started
+    attributes:
+      managedPipelineMode: Integrated
+      autoStart: True
+      processModel.identityType: SpecificUser
+      processModel.userName: cwsadmin
+      processModel.password: And$5FG1#
+      processModel.loadUserProfile: True
+
+- name: Add Monitor_IdentityService and ScreeningService to NetCore AppPool
+  win_iis_webapplication:
+    application_pool: NetCore
+    name: "{{ item }}"
+    site: Default Web Site
+    state: present
+    physical_path: "C:\\inetpub\\wwwroot\\{{ item }}"
+  with_items:
+    - 'Monitor.IdentityService'
+    - 'Monitor.ScreeningService'
+
+- name: AmlService File Check
+  win_stat:
+    path: "{{ AmlService_dir + item }}"
+  with_items: "{{ AmlService_traget }}"
+  register: stat_file
+
+- name: AmlService Copy with time
+  win_copy:
+    src: "{{ AmlService_dir }}{{ item.stat.filename }}"
+    dest: "{{ AmlService_dir }}{{ item.stat.filename }}.{{ ansible_date_time.iso8601_basic_short }}"
+    remote_src: True
+  when: item.stat.exists == True
+  with_items: "{{stat_file.results}}"
+
+
+###############
+#RouterService#
+###############
+
+- name: RouterService File Check
+  win_stat:
+    path: "{{ RouterService_dir + item }}"
+  with_items: "{{ RouterService_traget }}"
+  register: stat_file
+
+- name: RouterService Copy with time
+  win_copy:
+    src: "{{ RouterService_dir }}{{ item.stat.filename }}"
+    dest: "{{ RouterService_dir }}{{ item.stat.filename }}.{{ ansible_date_time.iso8601_basic_short }}"
+    remote_src: True
+  when: item.stat.exists == True
+  with_items: "{{stat_file.results}}"
+
+#########################
+#ApplicationServicesHost#
+#########################
+
+- name: ApplicationServicesHost File Check
+  win_stat:
+    path: "{{ ApplicationServicesHost_dir + item }}"
+  with_items: "{{ ApplicationServicesHost_traget }}"
+  register: stat_file
+
+- name: ApplicationServicesHost Copy with time
+  win_copy:
+    src: "{{ ApplicationServicesHost_dir }}{{ item.stat.filename }}"
+    dest: "{{ ApplicationServicesHost_dir }}{{ item.stat.filename }}.{{ ansible_date_time.iso8601_basic_short }}"
+    remote_src: True
+  when: item.stat.exists == True
+  with_items: "{{stat_file.results}}"
+
+
+########################
+#     SharedServices   #
+########################
+
+- name: SharedServices File Check
+  win_stat:
+    path: "{{ SharedServices_dir + item }}"
+  with_items: "{{ SharedServices_traget }}"
+  register: stat_file
+
+- name: SharedServices Copy with time
+  win_copy:
+    src: "{{ SharedServices_dir }}{{ item.stat.filename }}"
+    dest: "{{ SharedServices_dir }}{{ item.stat.filename }}.{{ ansible_date_time.iso8601_basic_short }}"
+    remote_src: True
+  when: item.stat.exists == True
+  with_items: "{{stat_file.results}}"
+
+#   win_stat:
+#     path: "{{ AmlService_dir + item }}"
+#   with_items: "{{ AmlService_traget }}"
+#   register: stat_file
+#
+# - name: Debug it
+#   debug:
+#     msg: "{{item.stat.exists }} {{item.stat.filename }} {{ ansible_date_time.iso8601_basic_short }}"
+#   with_items: "{{stat_file.results}}"

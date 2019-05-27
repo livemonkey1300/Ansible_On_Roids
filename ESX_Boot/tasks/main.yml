@@ -1,0 +1,283 @@
+---
+# tasks file for ESX_Boot
+
+- name: Gather facts from standalone ESXi server having datacenter as 'ha-datacenter'
+  vmware_datastore_facts:
+    hostname: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    datacenter: '{{ datacenter }}'
+    validate_certs: no
+  delegate_to: localhost
+  register: facts
+
+- name: Gather all registered virtual machines
+  vmware_vm_facts:
+    hostname: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    validate_certs: no
+    vm_type: vm
+  delegate_to: localhost
+  register: vmfacts
+
+
+- name: Gather facts from standalone ESXi server having datacenter as 'ha-datacenter'
+  vmware_guest_facts:
+    hostname: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    datacenter: '{{ datacenter }}'
+    validate_certs: no
+    uuid: "{{ item.value.uuid }}"
+  delegate_to: localhost
+  with_dict: "{{ vmfacts.virtual_machines }}"
+  register: in_facts
+
+
+- name: Gather capability facts about all ESXi Host in given Cluster
+  vmware_host_capability_facts:
+    hostname: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    cluster_name: '{{ cluster }}'
+    validate_certs: no
+  delegate_to: localhost
+  register: all_cluster_hosts_facts
+
+# - name: Cluster items
+#   debug : msg="{{ item }}"
+#   with_items: "{{ all_cluster_hosts_facts.hosts_capability_facts }}"
+
+- name: Gather disk facts from virtual machine using UUID
+  vmware_guest_disk_facts:
+    hostname: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    datacenter: '{{ datacenter }}'
+    validate_certs: no
+    uuid: "{{ item.value.uuid }}"
+  with_dict: "{{ vmfacts.virtual_machines }}"
+  delegate_to: localhost
+  register: disk_facts
+
+
+# - debug : msg="{{item}}"
+#   with_dict: "{{ vmfacts.virtual_machines }}"
+#
+# - name: Gather all registered virtual machines
+#   vmware_guest_facts:
+#     hostname: '{{ vcenter_hostname }}'
+#     username: '{{ vcenter_username }}'
+#     password: '{{ vcenter_password }}'
+#     datacenter: '{{ datacenter }}'
+#     validate_certs: no
+#     uuid: "{{ item.value.uuid }}"
+#   delegate_to: localhost
+#   with_dict: "{{ vmfacts.virtual_machines }}"
+#   register: allvms
+#
+# - debug : msg="{{item}}"
+#   with_dict: "{{ allvms }}"
+#
+# - name: Gather disk facts from virtual machine using UUID
+#   vmware_guest_disk_facts:
+#     hostname: "{{ vcenter_hostname }}"
+#     username: "{{ vcenter_username }}"
+#     password: "{{ vcenter_password }}"
+#     datacenter: '{{ datacenter }}'
+#     validate_certs: no
+#     uuid: "{{ item.value.uuid }}"
+#   delegate_to: localhost
+#   with_dict: "{{ vmfacts.virtual_machines }}"
+#   register: disk_facts
+#
+# - debug : msg="{{item}}"
+#   with_dict: "{{ disk_facts }}"
+#
+# - name: Gather cluster facts from given datacenter
+#   vmware_cluster_facts:
+#     hostname: '{{ vcenter_hostname }}'
+#     username: '{{ vcenter_username }}'
+#     password: '{{ vcenter_password }}'
+#     cluster_name: '{{ cluster }}'
+#     validate_certs: no
+#   delegate_to: localhost
+#   register: cluster_facts
+#
+# - debug : msg="{{item}}"
+#   with_dict: "{{ cluster_facts }}"
+
+- name: Gather facts from datacenter about specific cluster
+  vmware_cluster_facts:
+    hostname: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    cluster_name: '{{ cluster }}'
+    validate_certs: no
+  delegate_to: localhost
+  register: cluster_facts
+
+# - name: Gather facts
+#   set_fact:
+#    datastores: "{{ facts.datastores }}"
+#    vm: "{{ vmfacts.virtual_machines }}"
+#    in_vm: "{{ in_facts.results }}"
+#    in_vm_disk: "{{ disk_facts }}"
+
+
+# - debug:
+#     msg: "System {{ inventory_hostname }}"
+#
+#
+#
+# - name: Gather facts about vmnics of an ESXi Host
+#   vmware_host_vmnic_facts:
+#     hostname: '{{ vcenter_hostname }}'
+#     username: '{{ vcenter_username }}'
+#     password: '{{ vcenter_password }}'
+#     esxi_hostname: '{{ esxi_hostname }}'
+#     validate_certs: no
+#   delegate_to: localhost
+#   register: host_vmnics
+#
+# - debug:
+#     msg: "VMNICS {{ host_vmnics }}"
+#
+#
+# - name: Gather facts about ESXi Host
+#   vmware_host_config_facts:
+#     hostname: '{{ vcenter_hostname }}'
+#     username: '{{ vcenter_username }}'
+#     password: '{{ vcenter_password }}'
+#     esxi_hostname: '{{ esxi_hostname }}'
+#     validate_certs: no
+#   delegate_to: localhost
+#   register: about_ESXi_Host
+#
+# - debug:
+#     msg: "VMNICS {{ about_ESXi_Host }}"
+
+
+# - name: Datastore
+#   vmware_datastore_facts:
+#     hostname: '{{ vcenter_hostname }}'
+#     username: '{{ vcenter_username }}'
+#     password: '{{ vcenter_password }}'
+#     datacenter: ESXI-DEV
+#     validate_certs: no
+#   delegate_to: localhost
+#   register: datastore
+#
+# - debug:
+#     msg: "datastore {{ datastore }}"
+
+
+# - name: Guest facts
+#   vmware_guest_facts:
+#     hostname: '{{ vcenter_hostname }}'
+#     username: '{{ vcenter_username }}'
+#     password: '{{ vcenter_password }}'
+#     datacenter: '{{ esxi_hostname }}'
+#     validate_certs: no
+#   delegate_to: localhost
+#   register: guest_facts_info
+#
+# - debug:
+#     msg: "Guest facts {{ guest_facts_info }}"
+
+
+# - name:  Gather DNS facts
+#   vmware_host_dns_facts:
+#     hostname: '{{ vcenter_hostname }}'
+#     username: '{{ vcenter_username }}'
+#     password: '{{ vcenter_password }}'
+#     esxi_hostname: '{{ esxi_hostname }}'
+#     validate_certs: no
+#   delegate_to: localhost
+#   register: guest_DNS_info
+#
+# - debug:
+#     msg: "Gather DNS facts {{ guest_DNS_info }}"
+
+
+# - name: Gather vmware host facts
+#   vmware_host_facts:
+#     hostname: '{{ vcenter_hostname }}'
+#     username: '{{ vcenter_username }}'
+#     password: '{{ vcenter_password }}'
+#     esxi_hostname: '{{ esxi_hostname }}'
+#     validate_certs: no
+#   register: host_facts
+#   delegate_to: localhost
+#
+# - debug:
+#     msg: "Gather vmware host facts {{ host_facts }}"
+# - name: New VM Guest
+#   vsphere_guest:
+#     vcenter_hostname: '{{ vcenter_hostname }}'
+#     username: '{{ vcenter_username }}'
+#     password: '{{ vcenter_password }}'
+#     guest: newvm001
+#     state: powered_on
+#     vm_extra_config:
+#       vcpu.hotadd: yes
+#       mem.hotadd:  yes
+#       notes: This is a test VM
+#     vm_disk:
+#       disk1:
+#          size_gb: 10
+#          type: thin
+#          datastore: datastore1
+#     vm_hardware:
+#       memory_mb: 2048
+#       num_cpus: 2
+#       osid: centos64Guest
+#       scsi: paravirtual
+#     esxi:
+#       datacenter: '{{ vcenter_hostname }}'
+#       hostname: '{{ vcenter_hostname }}'
+#     validate_certs: no
+#   delegate_to: localhost
+
+# - name: Create a VM from a template
+#   vmware_guest:
+#     hostname: '{{ vcenter_hostname }}'
+#     username: '{{ vcenter_username }}'
+#     password: '{{ vcenter_password }}'
+#     validate_certs: no
+#     folder: /
+#     name: testvm_2
+#     state: poweredon
+#     guest_id: rhel7_64Guest
+#     disk:
+#     - size_gb: 10
+#       type: thin
+#       datastore: datastore1
+#     hardware:
+#       memory_mb: 512
+#       num_cpus: 2
+#       num_cpu_cores_per_socket: 1
+#       scsi: paravirtual
+#       memory_reservation: 512
+#       memory_reservation_lock: True
+#       mem_limit: 8096
+#       mem_reservation: 4096
+#       cpu_limit: 8096
+#       cpu_reservation: 4096
+#       max_connections: 5
+#       hotadd_cpu: True
+#       hotremove_cpu: True
+#       hotadd_memory: False
+#     networks:
+#     - name: CaseWere
+#        device_type: e1000
+#       mac: aa:bb:dd:aa:00:14
+#     cdrom:
+#       type: iso
+#       iso_path: "[datastore1] iso/CentOS-7-x86_64-DVD-1804.iso"
+#   delegate_to: localhost
+#   register: deploy
+#
+# - debug:
+#     msg: "System {{ deploy }}"

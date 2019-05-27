@@ -1,0 +1,9 @@
+# Set file and folder path for SSMS installer .exe
+$filepath="{{ tmpdir }}/SSMS-Setup-ENU.exe"
+
+# start the SSMS installer
+write-host "Beginning SSMS 2016 install..." -nonewline
+$Parms = " /Install /Quiet /Norestart /Logs log.txt"
+$Prms = $Parms.Split(" ")
+& "$filepath" $Prms | Out-Null
+Write-Host "SSMS installation complete" -ForegroundColor Green

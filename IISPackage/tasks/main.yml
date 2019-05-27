@@ -1,0 +1,39 @@
+---
+# tasks file for IISPackage
+
+- name: Install IIS Web-Server with sub features and management tools
+  win_feature:
+    name: Web-Server
+    state: present
+    include_sub_features: True
+    include_management_tools: True
+  register: win_feature
+  ignore_errors: True
+
+- name: Create Temporary directory
+  win_file:
+    path : "{{ tmpdir }}"
+    state : directory
+
+- name : Copy Nugget Installer Script
+  template:
+    src: nugget_installer.j2
+    dest: "{{ tmpdir }}/nugget_installer.ps1"
+  register: nugget_installer_log
+
+- debug : msg="{{nugget_installer_log}}"
+
+
+- name: Run remote PowerShell Script
+  win_command: "powershell.exe -ExecutionPolicy ByPass -File {{ tmpdir }}/nugget_installer.ps1"
+  ignore_errors: True
+
+- name: Install Required Package
+  win_chocolatey:
+    name: "{{item.name}}"
+    state: present
+    version : "{{item.v}}"
+  ignore_errors: True
+  with_items:
+    - { name : dotnetcore-windowshosting , v : 2.0.8 }
+    - { name : dotnetcore-runtime , v : 2.0.7 }

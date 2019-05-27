@@ -1,0 +1,14 @@
+- hosts: 127.0.0.1
+  connection: local
+  become: yes
+  gather_facts: True
+  tasks:
+    - name: ESX
+      include_role:
+        name: ESX_Boot2
+      when:
+        - vcenter_hostname is defined
+        - vcenter_username is defined
+        - vcenter_password is defined
+        - datacenter is defined
+        - cluster is defined

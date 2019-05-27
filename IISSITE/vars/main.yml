@@ -1,0 +1,7 @@
+---
+# vars file for IISSITE
+zipurl: http://10.100.1.5/Rex.zip
+zipdest: Rex.zip
+IISurl: http://10.100.1.5/IIS.pfx
+IISFile: IIS.pfx
+CertPassword: yA801312

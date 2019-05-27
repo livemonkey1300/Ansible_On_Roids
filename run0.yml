@@ -2,13 +2,13 @@
   become: yes
   gather_facts: yes
   vars_files:
-    - /home/adam/Desktop/DEVSTACK/vars.yml
+    - ./vars.yml
   roles:
-#     - op.keystone_test
-#     - op.Glance
-#     - op.Glance_test
-#      - op.Nova
-#      - op.Neutron
-#      - op.Horizon
-#      - op.firstinstance
-       - op.personal
+    - op.keystone_test
+    - op.Glance
+    - op.Glance_test
+    - op.Nova
+    - op.Neutron
+    - op.Horizon
+    - op.firstinstance
+    - op.personal

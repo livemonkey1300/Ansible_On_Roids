@@ -1,0 +1,188 @@
+---
+# tasks file for win.base
+#
+# - name : install openstack Etcd packages
+#   yum :
+#     name: "{{packages}}"
+#     state: latest
+
+# - name: Run the setup.exe installer on multiple servers using the Domain Administrator
+#   win_psexec:
+#     command: whoami.exe
+#     hostnames:
+#     - WIN-V0QRLKVPT75
+#     username: WIN-V0QRLKVPT75\Administrator
+#     password: yA801312
+#     priority: high
+
+
+# install/uninstall with win_package
+- name: download the 7-Zip package
+  debug: msg="{{ ansible_os_family }}"
+
+- name: run ipconfig
+  raw: ipconfig
+  register: ipconfig
+
+- debug: var=ipconfig
+
+- name: run Get-Host
+  get_host:
+  register: h
+
+- debug: var=h.get_features
+
+- name: test stat module on file
+  win_stat: path="C:/Windows/win.ini"
+  register: stat_file
+
+- debug: var=stat_file
+
+- name: check stat_file result
+  assert:
+    that:
+      - "stat_file.stat.exists"
+      - "not stat_file.stat.isdir"
+      - "stat_file.stat.size > 0"
+
+- name: making time
+  raw: mkdir C:\temp\
+  ignore_errors: yes
+
+- name: Add public company share
+  win_share:
+    name: company
+    description: top secret share
+    path: C:\temp
+    list: yes
+    full: Administrators
+
+
+- debug: var=win_sha
+
+- name : Setting facts
+  set_fact:
+    tmploc : C:\temp\
+    download :
+      - { url : 'https://download.microsoft.com/download/3/a/3/3a3bda26-560d-4d8e-922e-6f6bc4553a84/DotNetCore.2.0.9-WindowsHosting.exe' , dest : "DotNetCore.2.0.9-WindowsHosting.exe" }
+      - { url : 'https://download.microsoft.com/download/A/9/F/A9F8872C-48B2-41DB-8AAD-D5908D988592/dotnet-runtime-2.0.7-win-x64.exe' , dest : "dotnet-runtime-2.0.7-win-x64.exe" }
+
+
+# - name: download the 7-Zip package
+#   win_get_url:
+#     url: "{{ item.url }}"
+#     dest: "{{ tmploc }}{{ item.dest }}"
+#   with_items: "{{download}}"
+
+- name : Copy keystone config file to Master server
+  template:
+    src: test.j2
+    dest: C:/temp/powershellscript.ps1
+  register: keystonecopy
+
+- debug : msg="{{keystonecopy}}"
+
+- name : Get All User Dir
+  getuserdir:
+  register: myuser
+
+- debug : msg="{{myuser.users}}"
+
+- name : Copy files
+  template:
+    src: tpl.j2
+    dest: "C:/Users/{{item.value}}/Desktop/SharedFile.bat"
+  with_dict: "{{myuser.users}}"
+
+
+
+- name: Run remote PowerShell Script
+  win_command: powershell.exe -ExecutionPolicy ByPass -File C:/temp/powershellscript.ps1
+
+
+- name: Install multiple packages
+  win_chocolatey:
+    name: "{{item.name}}"
+    state: present
+    version : "{{item.v}}"
+  with_items:
+    - { name : dotnetcore-windowshosting , v : 2.0.8 }
+    - { name : dotnetcore-runtime , v : 2.0.7 }
+
+# - name: Install multiple packages
+#   win_chocolatey:
+#     name: "{{wget}}"
+#     state: present
+
+- name : Copy keystone config file to Master server
+  template:
+    src: test0.j2
+    dest: C:/temp/powershellscript1.ps1
+  register: keystonecopy
+
+- debug : msg="{{keystonecopy}}"
+
+# - name: Run remote PowerShell Script
+#   win_command: powershell.exe -ExecutionPolicy ByPass -File C:/temp/powershellscript1.ps1 -root "{{item.value.roots}}" -pass "{{item.value.pass}}" -user "{{item.value.user}}" -dir "{{item.value.loc}}" -fileName "{{item.value.name}}"
+#   with_dict: "{{ repof }}"
+# - name: Ansible Dictionary variable Example
+#   debug:
+#       msg: "Key is {{ item.key}} and value is {{item.value}}"
+#   with_dict: "{{ repof }}"
+   # [string]$root = "http://web02.dnsnetworks.ca/downloads/",
+   # [string]$pass = "password",
+   # [string]$dir = 'C:\temp\',
+   # [string]$user = "access" ,
+   # [string]$fileName  = "win2012r2std.vhdx"
+
+# - name: Run Windows Calculator
+#   win_command : "{{ tmploc }}{{ item.dest }} /q /f /norestart "
+#   with_items: "{{download}}"
+
+
+
+
+
+- name: Creates directory
+  win_file:
+    path: C:\Temp\folder\subfolder
+    state: directory
+  register: windir
+
+- debug : msg="{{windir}}"
+# - name: making time
+#   raw: mkdir c:\sites\acme
+#   ignore_errors: yes
+#
+# - name: Install an MSI, and wait for it to complete before continuing
+#   win_msi:
+#     path: C:\temp\7z.msi
+#     wait: yes
+#
+# - name: Install IIS Web-Server with sub features and management tools
+#   win_feature:
+#     name: Web-Server
+#     state: present
+#     include_sub_features: True
+#     include_management_tools: True
+#   register: win_feature
+#
+# - name: Add ACME webapplication on IIS.
+#   win_iis_webapplication:
+#     name: api
+#     site: acme
+#     state: present
+#     physical_path: c:\sites\acme
+#
+# - name: Acme IIS site
+#   win_iis_website:
+#     name: acme
+#     state: started
+#     port: 80
+#     ip: 127.0.0.1
+#     hostname: localhost
+#     application_pool: acme
+#     physical_path: c:\sites\acme
+#     parameters: logfile.directory:c:\sites\logs
+#   register: website
+# - debug: var=website
