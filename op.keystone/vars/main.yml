@@ -1,0 +1,7 @@
+---
+# vars file for op.keystone
+packages :
+  - openstack-keystone
+  - httpd
+  - mod_wsgi
+services : httpd

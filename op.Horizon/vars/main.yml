@@ -1,0 +1,12 @@
+---
+# vars file for op.Horizon
+
+cloud: OP
+state: present
+
+packages :
+ - openstack-dashboard
+
+services :
+ - httpd
+ - memcached

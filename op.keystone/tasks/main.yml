@@ -1,0 +1,124 @@
+---
+# tasks file for op.keystone
+
+- name: Remove keystone database and access to it
+  command: 'mysql -p{{ mysql_root_password }} -ne "{{ item }}"'
+  with_items:
+    - DROP DATABASE IF EXISTS keystone
+    - DELETE FROM mysql.db WHERE Db='keystone' OR Db='keystone\\_%'
+  changed_when: False
+
+- name: Remove keystone users and FLUSH privilege
+  command: 'mysql -p{{ mysql_root_password }} -ne "{{ item }}"'
+  with_items:
+    - DELETE FROM mysql.user WHERE User='keystone'
+    - FLUSH PRIVILEGES
+  changed_when: False
+
+- name: Recreate keystone database an users FLUSH PRIVILEGES
+  command: 'mysql -p{{ mysql_root_password }} -ne "{{ item }}"'
+  with_items:
+    - CREATE DATABASE keystone
+    - GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY '{{KEYSTONE_DBPASS}}'
+    - GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '{{KEYSTONE_DBPASS}}'
+    - FLUSH PRIVILEGES
+  changed_when: False
+
+- name : install openstack keystone packages
+  yum :
+    name: "{{packages}}"
+    state: latest
+
+- name : Copy keystone config file to Master server
+  template:
+    src: keystone.j2
+    dest: /etc/keystone/keystone.conf
+  register: keystonecopy
+
+- debug : msg="{{keystonecopy}}"
+
+- name : Populate the Identity service database keystone
+  command: su -s /bin/sh -c "keystone-manage db_sync" keystone
+  register: keydb
+
+- debug : msg="{{keydb}}"
+
+- name : Initialize Fernet key repositories keystone
+  command: keystone-manage {{ item }}
+  with_items:
+    - fernet_setup --keystone-user keystone --keystone-group keystone
+    - credential_setup --keystone-user keystone --keystone-group keystone
+  register: keyinit
+
+- debug : msg="{{keyinit}}"
+
+- name : Bootstrap the Identity service keystone
+  command: keystone-manage bootstrap --bootstrap-password {{ADMIN_PASS}} --{{ item }}
+  with_items:
+    - bootstrap-admin-url http://{{groups['contoller'][0]}}:5000/v3/ --bootstrap-region-id {{REGION}}
+    - bootstrap-internal-url http://{{groups['contoller'][0]}}:5000/v3/ --bootstrap-region-id {{REGION}}
+    - bootstrap-public-url http://{{groups['contoller'][0]}}:5000/v3/ --bootstrap-region-id {{REGION}}
+  register: keyBootstrap
+
+- debug : msg="{{keyBootstrap}}"
+
+- name : Copy the /etc/httpd/conf/httpd.conf file and configure the ServerName
+  template:
+    src: httpd.j2
+    dest: /etc/httpd/conf/httpd.conf
+  register: keystonehttpd
+
+- debug : msg="{{keystonehttpd}}"
+
+- name : Create a link to the /usr/share/keystone/wsgi-keystone.conf file
+  file:
+    src: /usr/share/keystone/wsgi-keystone.conf
+    dest: /etc/httpd/conf.d/wsgi-keystone.conf
+    state: link
+    force: true
+  ignore_errors: yes
+  register: keystonelink
+
+- debug : msg="{{keystonelink}}"
+
+- name : Restart httpd services
+  systemd:
+    state: restarted
+    name: "{{services}}"
+    enabled: yes
+    masked: no
+
+- name : Copy the openstackrc
+  template:
+    src: openstackrc.j2
+    dest: ~/openstackrc
+    force: true
+  register: cpopenstackrc
+
+- debug : msg="{{ cpopenstackrc }}"
+
+- name : Copy the bash_profile
+  template:
+    src: bash_profile.j2
+    dest: ~/.bash_profile
+    force: true
+  register: cpbash_profile
+
+- debug : msg="{{ cpbash_profile }}"
+
+- name: create directory if they don't exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0775
+  with_items:
+    - ~/.config/openstack/
+
+- name : Copy the clouds.yaml
+  template:
+    src: clouds.j2
+    dest: ~/.config/openstack/clouds.yaml
+    force: true
+  register: cpcloud
+
+- debug : msg="{{ cpcloud }}"

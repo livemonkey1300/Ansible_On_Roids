@@ -1,0 +1,14 @@
+---
+# tasks file for op.openstackPack
+- name : install openstack release packages
+  yum :
+    name: centos-release-openstack-queens
+    state: latest
+
+- name: upgrade all packages
+  yum: name=* state=latest
+
+- name : install openstack openstackclient packages
+  yum :
+    name: "{{packages}}"
+    state: latest

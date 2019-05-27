@@ -1,0 +1,11 @@
+---
+# vars file for op.Glance_test
+
+cloud: OP
+state: present
+
+packages :
+  - wget
+
+os_download :
+  - { url : 'http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img' , dest: 'cirros-0.4.0-x86_64-disk.img' }

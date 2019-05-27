@@ -1,0 +1,33 @@
+---
+# tasks file for op.Glance_test
+- name : install Glance_test packages
+  yum :
+    name: "{{packages}}"
+    state: latest
+
+- name: Download Glance_test ISO
+  get_url:
+    url: "{{ item.url }}"
+    dest: ~/{{ item.dest }}
+  loop : "{{os_download}}"
+  register: isodownload
+
+- debug : msg="{{isodownload.results[0].item.dest}}"
+
+- name: setting iso location
+  set_fact:
+    iso : "{{isodownload.results[0].item.dest}}"
+
+- name: Download Glance_test ISO
+  os_image:
+    name: cirros
+    container_format: bare
+    disk_format: qcow2
+    state: present
+    filename: "{{iso}}"
+    kernel: cirros-vmlinuz
+    ramdisk: cirros-initrd
+    interface: public
+    properties:
+      cpu_arch: x86_64
+      distro: ubuntu

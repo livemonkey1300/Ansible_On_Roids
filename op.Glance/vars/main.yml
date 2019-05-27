@@ -1,0 +1,11 @@
+---
+# vars file for op.Glance
+cloud: OP
+state: present
+
+packages :
+  - openstack-glance
+  
+services :
+  - openstack-glance-api
+  - openstack-glance-registry

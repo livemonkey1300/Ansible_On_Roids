@@ -1,0 +1,34 @@
+- hosts: all
+  become: yes
+  gather_facts: True
+
+  tasks:
+    - debug: var=hostvars[inventory_hostname]
+    - debug: var=hostvars[inventory_hostname]['ansible_interfaces']
+
+    - name: install needed network manager libs
+      yum:
+         name: '{{ item }}'
+         state: installed
+      with_items:
+          - NetworkManager-glib
+          - NetworkManager-libnm-devel
+          - libnma
+          - libnma-devel
+          - nm-connection-editor.x86_64
+          - libsemanage-python
+          - policycoreutils-python
+    - set_fact:
+       one_fact: "{{ hostvars[inventory_hostname]['ansible_interfaces'][2]}}"
+    - debug: msg="{{ one_fact }}"
+    - name : networked
+      nmcli:
+          conn_name: "{{ one_fact }}"
+          ifname: "{{ one_fact }}"
+          type: ethernet
+          ip4: 192.0.2.100/24
+          autoconnect: yes
+          state: present
+      register: Test
+    - debug : msg="{{Test}}"
+#  OK : "{{ hostvars[inventory_hostname]['ansible_interfaces'][1]}}"

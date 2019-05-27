@@ -1,0 +1,9 @@
+---
+# vars file for op.openstackSQL
+packages :
+  - mariadb
+  - mariadb-server
+  - python2-PyMySQL
+  - MySQL-python
+
+services : mariadb

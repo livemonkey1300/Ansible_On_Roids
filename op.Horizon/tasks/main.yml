@@ -1,0 +1,23 @@
+---
+# tasks file for op.Horizon
+
+- name : install Horizon packages
+  yum :
+    name: "{{packages}}"
+    state: latest
+
+- name : Copy Horizon config file to Master
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  loop:
+   - { src: 'local_settings.j2', dest: '/etc/openstack-dashboard/local_settings' }
+   - { src: 'openstack-dashboard.j2', dest: '/etc/httpd/conf.d/openstack-dashboard.conf' }
+
+- name : Restart Horizon services
+  systemd:
+    state: restarted
+    name: "{{ item }}"
+    enabled: yes
+    masked: no
+  loop : "{{ services }}"

@@ -1,0 +1,29 @@
+---
+# tasks file for op.MessageQueue
+- name : install openstack Message Queue packages
+  yum :
+    name: "{{packages}}"
+    state: latest
+
+- name : Message Queue Restart services
+  systemd:
+    state: restarted
+    name: "{{services}}"
+    enabled: yes
+    masked: no
+
+- name : Add the openstack user to the Message Queue
+  command: rabbitmqctl add_user openstack {{ RABBIT_PASS }}
+  changed_when: False
+  ignore_errors: yes
+  register: rabbitmsq
+
+- debug: msg="{{rabbitmsq}}"
+
+- name : Permit configuration, write, and read access for the openstack to the Message Queue
+  command: rabbitmqctl set_permissions openstack ".*" ".*" ".*"
+  changed_when: False
+  ignore_errors: yes
+  register: rabbitmsq
+
+- debug: msg="{{rabbitmsq}}"

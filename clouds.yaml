@@ -1,0 +1,7 @@
+clouds:
+ OP:
+   region_name: RegionOne
+   auth:
+     username: 'admin'
+     password: adminP123#!
+     project_name: 'admin'

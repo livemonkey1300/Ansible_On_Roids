@@ -1,0 +1,21 @@
+---
+# tasks file for beta
+- name : Testing template
+  template:
+   src: tm.j2
+   dest: ~/template1.txt
+  register: Testing
+
+- name : factTest
+  set_fact :
+    ts : "{{Testing.size}}"
+
+- debug : msg="{{ts}}"
+
+- name : Testing template "{{ts}}"
+  template:
+   src: tm.j2
+   dest: ~/{{ts}}.txt
+  register: Testing2
+
+- debug : msg="{{Testing2}}"

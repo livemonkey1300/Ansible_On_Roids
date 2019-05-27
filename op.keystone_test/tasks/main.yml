@@ -1,0 +1,64 @@
+---
+# tasks file for op.keystone_test
+
+# - os_keystone_domain:
+#      cloud: mycloud
+#      state: present
+#      name: demo
+#      description: Demo Domain
+- name: create directory if they don't exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0775
+  with_items:
+    - ~/.config/openstack/
+
+- name : Copy the clouds.yaml
+  template:
+    src: clouds.j2
+    dest: ~/.config/openstack/clouds.yaml
+    force: true
+  register: cpcloud
+
+- debug : msg="{{ cpcloud }}"
+
+- name: Get list of clouds from OpenStack client config
+  os_client_config:
+    clouds: OP
+- debug: var=openstack.clouds
+
+- name : create a new domain
+  os_keystone_domain:
+       name: example
+       description: "An Example Domain"
+
+- name : Create the service project demo and service
+  os_project:
+    name: "{{ item.name }}"
+    description: "{{ item.description }}"
+    domain_id : default
+    enabled: True
+  loop:
+    - { name: 'service', description: 'Service Project' }
+    - { name: 'demo', description: 'Demo Project' }
+
+- name : Create the demo user
+  os_user:
+   name: demo
+   password: secret
+   email: demo@example.com
+   domain: default
+   default_project: demo
+
+- name : Create a role named "user"
+  os_keystone_role:
+    name: user
+
+#Add the user role to the demo project and user:
+#$ openstack role add --project demo --user demo user
+- name : Add the user role to the demo project and user
+  os_user_role:
+    user: demo
+    role: user
+    domain: default

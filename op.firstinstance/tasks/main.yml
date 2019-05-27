@@ -1,0 +1,104 @@
+---
+# tasks file for op.firstinstance
+
+- name: install needed network manager libs
+  yum:
+      name: '{{ item }}'
+      state: installed
+  with_items:
+      - NetworkManager-glib
+      - NetworkManager-libnm
+      - nm-connection-editor.x86_64
+      - libsemanage-python
+      - policycoreutils-python
+      - bridge-utils
+
+
+
+- name : test vswitch
+  nmcli:
+      type: bridge
+      conn_name: br-mng
+      ifname: br-mng
+      ip4: 192.0.2.100/24
+      state: present
+      autoconnect: yes
+- name : test vswitch
+  nmcli:
+      type: ethernet
+      conn_name: "{{ hostvars[inventory_hostname]['ansible_interfaces'][2]}}"
+      ifname: "{{ hostvars[inventory_hostname]['ansible_interfaces'][2]}}"
+      master: br-mng
+      state: present
+      autoconnect: yes
+
+- name: "Create 'tiny' flavor with 1024MB of RAM, 1 virtual CPU, and 10GB of local disk, and 10GB of ephemeral."
+  os_nova_flavor:
+    state: present
+    name: tiny
+    ram: 1024
+    vcpus: 1
+    disk: 10
+    ephemeral: 10
+
+- name: Creates a key pair with the running users public key
+  os_keypair:
+      state: present
+      name: ansible_key
+      public_key_file: /root/.ssh/id_rsa.pub
+
+- name: Create a security group rule
+  os_security_group_rule:
+    security_group: default
+    protocol: icmp
+    remote_ip_prefix: 0.0.0.0/0
+
+- name: Create a security group rule
+  os_security_group_rule:
+    security_group: default
+    protocol: tcp
+    port_range_min: 22
+    port_range_max: 22
+    remote_ip_prefix: 0.0.0.0/0
+
+- name: netw
+  os_network:
+    state: present
+    name: provider
+    provider_physical_network : provider
+    provider_network_type : flat
+    shared : true
+    external: true
+
+# $ openstack subnet create --network provider \
+#   --allocation-pool start=START_IP_ADDRESS,end=END_IP_ADDRESS \
+#   --dns-nameserver DNS_RESOLVER --gateway PROVIDER_NETWORK_GATEWAY \
+#   --subnet-range PROVIDER_NETWORK_CIDR provider
+- name: openvstich
+  os_subnet:
+    state: present
+    network_name: provider
+    name: net1subnet
+    cidr: 192.168.0.0/24
+    allocation_pool_start : 192.168.0.4
+    allocation_pool_end : 192.168.0.20
+    dns_nameservers:
+       - 8.8.4.4
+       - 8.8.8.8
+    gateway_ip: 10.0.2.2
+
+# openstack server create --flavor m1.nano --image cirros \
+#   --nic net-id=PROVIDER_NET_ID --security-group default \
+#   --key-name mykey provider-instance
+- name:  Creates a new instance and attaches to a specific network
+  os_server:
+    state: "{{item}}"
+    name: vm1
+    image: cirros
+    key_name: ansible_key
+    timeout: 200
+    flavor: tiny
+    network: provider
+  loop:
+    - absent
+    - present

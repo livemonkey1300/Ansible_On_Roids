@@ -1,0 +1,6 @@
+---
+# vars file for op.openstackPack
+packages :
+  - python-openstackclient
+  - openstack-selinux
+  - python2-shade

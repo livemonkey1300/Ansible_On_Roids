@@ -1,0 +1,6 @@
+---
+# vars file for op.packageBase
+packages :
+  - vim
+  - bash-completion
+  - mlocate

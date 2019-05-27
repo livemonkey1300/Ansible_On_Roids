@@ -1,0 +1,7 @@
+---
+# vars file for op.Memcached
+packages :
+  - memcached
+  - python-memcached
+
+services : rabbitmq-server

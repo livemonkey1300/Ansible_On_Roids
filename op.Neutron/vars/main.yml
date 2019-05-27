@@ -1,0 +1,23 @@
+---
+# vars file for op.Neutron
+cloud: OP
+state: present
+
+packages :
+ - openstack-neutron
+ - openstack-neutron-ml2
+ - openstack-neutron-linuxbridge
+ - ebtables
+ - ipset
+
+services :
+  - openstack-nova-api
+  - openstack-nova-compute
+  - neutron-server
+  - neutron-linuxbridge-agent
+  - neutron-dhcp-agent
+  - neutron-metadata-agent
+  - neutron-l3-agent
+
+# systemctl enable neutron-l3-agent.service
+# systemctl start neutron-l3-agent.service

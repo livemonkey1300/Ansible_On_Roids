@@ -1,0 +1,4 @@
+---
+# vars file for op.firstinstance
+cloud: OP
+state: present

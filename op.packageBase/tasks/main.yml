@@ -1,0 +1,7 @@
+---
+# tasks file for op.packageBase
+- name : Installing basic centos packages
+  yum :
+    name : "{{ packages }}"
+    state : latest
+    

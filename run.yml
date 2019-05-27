@@ -1,0 +1,24 @@
+- hosts: all
+  become: yes
+  roles:
+     - op.packageBase
+
+- hosts: node
+  become: yes
+  roles:
+     - op.chrony-master
+     - op.openstackPack
+
+- hosts: contoller
+  become: yes
+  roles:
+     - op.openstackSQL
+     - op.MessageQueue
+     - op.Memcached
+     - op.etcd
+     - op.keystone
+     - op.keystone_test
+     - op.Glance
+     - op.Glance_test
+     - op.Nova
+     - op.Neutron

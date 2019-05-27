@@ -1,0 +1,66 @@
+---
+# tasks file for op.openstackSQL
+- name : Installing MySQL On Master server
+  yum :
+    name : "{{ packages }}"
+    state : latest
+  register: pack
+- debug: msg="{{ pack }}"
+
+- name : Copy openstack.cnf On Master server
+  template:
+    src: openstack.j2
+    dest: /etc/my.cnf.d/openstack.cnf
+  when: "inventory_hostname in groups['contoller']"
+  register: mysqls
+- debug: msg="{{ mysqls }}"
+
+
+- name : Mysqld Restart services
+  systemd:
+    state: restarted
+    name: "{{services}}"
+    enabled: yes
+    masked: no
+
+# Set root password
+# UPDATE mysql.user SET Password=PASSWORD('mysecret') WHERE User='root';
+# FLUSH PRIVILEGES;
+
+- name: Set root Password
+  mysql_user: login_password={{ mysql_root_password }} check_implicit_admin=yes name=root host={{ item }} password={{ mysql_root_password }} state=present
+  with_items:
+    - localhost
+    - 127.0.0.1
+    - ::1
+
+- name: Reload privilege tables
+  command: 'mysql -p{{ mysql_root_password }} -ne "{{ item }}"'
+  with_items:
+    - FLUSH PRIVILEGES
+  changed_when: False
+
+- name: Remove anonymous users
+  command: 'mysql -p{{ mysql_root_password }} -ne "{{ item }}"'
+  with_items:
+    - DELETE FROM mysql.user WHERE User=''
+  changed_when: False
+
+- name: Disallow root login remotely
+  command: 'mysql -p{{ mysql_root_password }} -ne "{{ item }}"'
+  with_items:
+    - DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1')
+  changed_when: False
+
+- name: Remove test database and access to it
+  command: 'mysql -p{{ mysql_root_password }} -ne "{{ item }}"'
+  with_items:
+    - DROP DATABASE IF EXISTS test
+    - DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%'
+  changed_when: False
+
+- name: Reload privilege tables
+  command: 'mysql -p{{ mysql_root_password }} -ne "{{ item }}"'
+  with_items:
+    - FLUSH PRIVILEGES
+  changed_when: False

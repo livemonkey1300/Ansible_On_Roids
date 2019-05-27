@@ -1,0 +1,25 @@
+[contoller]
+10.0.2.16
+
+[compute]
+10.0.2.2[0:9]
+
+[node:children]
+contoller
+compute
+
+[compute:vars]
+
+
+[all:vars]
+ansible_connection=ssh
+ansible_user=root
+ansible_ssh_pass=DNSt3c4!
+mysql_root_password = SudoPass10022#!
+RABBIT_PASS = rabbit123
+ADMIN_PASS = adminP123#!
+KEYSTONE_DBPASS = keystoneP123#!
+REGION = RegionOne
+GLANCE_DBP = glanceP123#!
+NOVA_DBPASS = NovaP123#!
+NEUTRON_DBPASS = NeutronP123#!

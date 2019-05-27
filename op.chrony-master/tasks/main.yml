@@ -1,0 +1,28 @@
+---
+# tasks file for op.chrony-master
+- name : Installing master npt server packages
+  yum :
+    name : "{{ packages }}"
+    state : latest
+
+- name : Copy chrony config file to server main
+  template:
+    src: chrony.j2
+    dest: /etc/chrony.conf
+  when: "inventory_hostname in groups['contoller']"
+  register: chron
+- debug: msg="{{ chron }}"
+
+- name : Copy chrony config file to server node
+  template:
+    src: chrony-node.j2
+    dest: /etc/chrony.conf
+  when: "inventory_hostname not in groups['contoller']"
+  register: chron
+
+- debug: msg="{{ chron }}"
+
+- name : Restart chronyd services
+  systemd:
+    state: restarted
+    name: "{{services}}"

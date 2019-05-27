@@ -1,0 +1,6 @@
+---
+# vars file for op.MessageQueue
+packages :
+  - rabbitmq-server
+
+services : rabbitmq-server

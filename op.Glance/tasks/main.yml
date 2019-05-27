@@ -1,0 +1,102 @@
+---
+# tasks file for op.Glance
+- name: Setting Glance Fac
+  set_fact:
+    servicedb : glance
+    Userdb : glance
+    Passdb : "{{ GLANCE_DBP }}"
+    servicedom : default
+    servicepass : "{{ GLANCE_DBP }}"
+    servicerole : admin
+    serviceproject : service
+    servicetype : image
+    servicedescription : OpenStack Image Service
+    serviceregion : "{{REGION}}"
+    serviceurl : http://{{groups['contoller'][0]}}:9292
+
+- name: database {{ servicedb }}
+  command: 'mysql -p{{ mysql_root_password }} -ne "{{ item }}"'
+  with_items:
+    - DROP DATABASE IF EXISTS {{ servicedb }}
+    - DELETE FROM mysql.db WHERE Db='{{ servicedb }}' OR Db='{{ servicedb }}\\_%'
+    - DELETE FROM mysql.user WHERE User='{{ Userdb }}'
+    - FLUSH PRIVILEGES
+    - CREATE DATABASE {{ servicedb }}
+    - GRANT ALL PRIVILEGES ON {{ servicedb }}.* TO '{{ Userdb }}'@'localhost' IDENTIFIED BY '{{Passdb}}'
+    - GRANT ALL PRIVILEGES ON {{ servicedb }}.* TO '{{ Userdb }}'@'%' IDENTIFIED BY '{{Passdb}}'
+    - FLUSH PRIVILEGES
+  changed_when: False
+  register : glancedbconf
+- debug : msg="{{glancedbconf}}"
+#
+# To create the service credentials, complete these steps:
+# Create the glance user:
+# $ openstack user create --domain default --password-prompt glance
+- name : Create the {{ Userdb }} user
+  os_user:
+   name: "{{ Userdb }}"
+   password: "{{servicepass}}"
+   domain: "{{ servicedom }}"
+
+# Add the admin role to the glance user and service project:
+# $ openstack role add --project service --user glance admin
+#Add the user role to the demo project and user:
+#$ openstack role add --project demo --user demo user
+
+- name : Add the {{ servicerole }} role to the {{ serviceproject }} project for user {{ Userdb }}
+  os_user_role:
+    user: "{{ Userdb }}"
+    role: "{{ servicerole }}"
+    project: "{{ serviceproject }}"
+
+- name : Create a service for {{ Userdb }}
+  os_keystone_service:
+     name: "{{ Userdb }}"
+     service_type: "{{servicetype}}"
+     description: "{{servicedescription}}"
+
+- name : Create a endpoints for {{ Userdb }}
+  os_keystone_endpoint:
+     service: "{{ Userdb }}"
+     endpoint_interface: "{{ item }}"
+     url: "{{ serviceurl }}"
+     region: "{{serviceregion}}"
+  loop:
+    - admin
+    - public
+    - internal
+
+- name : install {{ Userdb }} packages
+  yum :
+    name: "{{packages}}"
+    state: latest
+
+- name : Copy {{ Userdb }} config file to Master
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  register: glancecopy
+  loop:
+   - { src: 'glance-api.j2', dest: '/etc/glance/glance-api.conf' }
+   - { src: 'glance-registry.j2', dest: '/etc/glance/glance-registry.conf' }
+
+- debug : msg="{{glancecopy}}"
+
+- name : Populate the {{servicetype}} service database {{servicedb}}
+  command: su -s /bin/sh -c "{{servicedb}}-manage db_sync" {{servicedb}}
+  register: gldb
+
+- debug : msg="{{gldb}}"
+
+- name : Restart {{servicedb}} services
+  systemd:
+    state: restarted
+    name: "{{ item }}"
+    enabled: yes
+    masked: no
+  loop : "{{ services }}"
+#    - openstack-glance-api
+#    - openstack-glance-registry
+  register: srvgl
+
+- debug : msg="{{srvgl}}"

@@ -1,0 +1,22 @@
+---
+# vars file for op.Nova
+cloud: OP
+state: present
+
+packages :
+ - openstack-nova-api
+ - openstack-nova-conductor
+ - openstack-nova-console
+ - openstack-nova-novncproxy
+ - openstack-nova-scheduler
+ - openstack-nova-placement-api
+ - openstack-nova-compute
+
+services :
+  - openstack-nova-api
+  - openstack-nova-consoleauth
+  - openstack-nova-scheduler
+  - openstack-nova-conductor
+  - openstack-nova-novncproxy
+  - libvirtd
+  - openstack-nova-compute

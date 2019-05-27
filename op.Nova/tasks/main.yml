@@ -1,0 +1,177 @@
+---
+# tasks file for op.Nova
+- name: Setting Nova Fac
+  set_fact:
+    servicedb : nova
+    servicemain : nova
+    servicedbs :
+      - nova_api
+      - nova
+      - nova_cell0
+    Userdb : nova
+    Passdb : "{{ NOVA_DBPASS }}"
+    servicedom : default
+    servicepass : "{{ NOVA_DBPASS }}"
+    servicerole : admin
+    serviceproject : service
+    servicetype : compute
+    servicedescription : OpenStack Compute
+    serviceregion : "{{REGION}}"
+    serviceurl : http://{{groups['contoller'][0]}}:8774/v2.1
+
+- name: database {{ servicedbs[0] }}
+  command: 'mysql -p{{ mysql_root_password }} -ne "{{ item }}"'
+  with_items:
+    - DROP DATABASE IF EXISTS {{ servicedbs[0] }}
+    - DELETE FROM mysql.db WHERE Db='{{ servicedbs[0] }}' OR Db='{{ servicedbs[0] }}\\_%'
+    - DELETE FROM mysql.user WHERE User='{{ Userdb }}'
+    - FLUSH PRIVILEGES
+    - CREATE DATABASE {{ servicedbs[0] }}
+    - GRANT ALL PRIVILEGES ON {{ servicedbs[0] }}.* TO '{{ Userdb }}'@'localhost' IDENTIFIED BY '{{Passdb}}'
+    - GRANT ALL PRIVILEGES ON {{ servicedbs[0] }}.* TO '{{ Userdb }}'@'%' IDENTIFIED BY '{{Passdb}}'
+    - FLUSH PRIVILEGES
+  changed_when: False
+
+- name: database {{ servicedbs[1] }}
+  command: 'mysql -p{{ mysql_root_password }} -ne "{{ item }}"'
+  with_items:
+    - DROP DATABASE IF EXISTS {{ servicedbs[1] }}
+    - DELETE FROM mysql.db WHERE Db='{{ servicedbs[1] }}' OR Db='{{ servicedbs[1] }}\\_%'
+    - DELETE FROM mysql.user WHERE User='{{ Userdb }}'
+    - FLUSH PRIVILEGES
+    - CREATE DATABASE {{ servicedbs[1] }}
+    - GRANT ALL PRIVILEGES ON {{ servicedbs[1] }}.* TO '{{ Userdb }}'@'localhost' IDENTIFIED BY '{{Passdb}}'
+    - GRANT ALL PRIVILEGES ON {{ servicedbs[1] }}.* TO '{{ Userdb }}'@'%' IDENTIFIED BY '{{Passdb}}'
+    - FLUSH PRIVILEGES
+  changed_when: False
+
+- name: database {{ servicedbs[2] }}
+  command: 'mysql -p{{ mysql_root_password }} -ne "{{ item }}"'
+  with_items:
+    - DROP DATABASE IF EXISTS {{ servicedbs[2] }}
+    - DELETE FROM mysql.db WHERE Db='{{ servicedbs[2] }}' OR Db='{{ servicedbs[2] }}\\_%'
+    - DELETE FROM mysql.user WHERE User='{{ Userdb }}'
+    - FLUSH PRIVILEGES
+    - CREATE DATABASE {{ servicedbs[2] }}
+    - GRANT ALL PRIVILEGES ON {{ servicedbs[2] }}.* TO '{{ Userdb }}'@'localhost' IDENTIFIED BY '{{Passdb}}'
+    - GRANT ALL PRIVILEGES ON {{ servicedbs[2] }}.* TO '{{ Userdb }}'@'%' IDENTIFIED BY '{{Passdb}}'
+    - FLUSH PRIVILEGES
+  changed_when: False
+
+- name : Create the {{ Userdb }} user
+  os_user:
+     name: "{{ Userdb }}"
+     password: "{{servicepass}}"
+     domain: "{{ servicedom }}"
+
+- name : Add the {{ servicerole }} role to the {{ serviceproject }} project for user {{ Userdb }}
+  os_user_role:
+    user: "{{ Userdb }}"
+    role: "{{ servicerole }}"
+    project: "{{ serviceproject }}"
+
+- name : Create a service for {{ Userdb }}
+  os_keystone_service:
+     name: "{{ Userdb }}"
+     service_type: "{{servicetype}}"
+     description: "{{servicedescription}}"
+
+- name : Create a endpoints for {{ Userdb }}
+  os_keystone_endpoint:
+     service: "{{ Userdb }}"
+     endpoint_interface: "{{ item }}"
+     url: "{{ serviceurl }}"
+     region: "{{serviceregion}}"
+  loop:
+    - admin
+    - public
+    - internal
+
+- name: Setting Placement Fac
+  set_fact:
+    Userdb : placement
+    servicetype : placement
+    servicedescription : Placement API
+    serviceurl : http://{{groups['contoller'][0]}}:8778
+
+
+- name : Create the {{ Userdb }} user
+  os_user:
+     name: "{{ Userdb }}"
+     password: "{{servicepass}}"
+     domain: "{{ servicedom }}"
+
+- name : Add the {{ servicerole }} role to the {{ serviceproject }} project for user {{ Userdb }}
+  os_user_role:
+    user: "{{ Userdb }}"
+    role: "{{ servicerole }}"
+    project: "{{ serviceproject }}"
+
+- name : Create a service for {{ Userdb }}
+  os_keystone_service:
+     name: "{{ Userdb }}"
+     service_type: "{{servicetype}}"
+     description: "{{servicedescription}}"
+
+- name : Create a endpoints for {{ Userdb }}
+  os_keystone_endpoint:
+     service: "{{ Userdb }}"
+     endpoint_interface: "{{ item }}"
+     url: "{{ serviceurl }}"
+     region: "{{serviceregion}}"
+  loop:
+    - admin
+    - public
+    - internal
+
+- name : install {{ Userdb }} packages
+  yum :
+    name: "{{packages}}"
+    state: latest
+
+- name : Copy {{ Userdb }} config file to Master
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  loop:
+   - { src: 'nova.j2', dest: '/etc/nova/nova.conf' }
+   - { src: '00-nova-placement-api.j2', dest: '/etc/httpd/conf.d/00-nova-placement-api.conf' }
+
+- name : Restart httpd services
+  systemd:
+    state: restarted
+    name: httpd
+
+# Populate the nova-api database:
+#
+# # su -s /bin/sh -c "nova-manage api_db sync" nova
+#  Note
+#
+# Ignore any deprecation messages in this output.
+#
+# Register the cell0 database:
+#
+# # su -s /bin/sh -c "nova-manage cell_v2 map_cell0" nova
+# Create the cell1 cell:
+#
+# # su -s /bin/sh -c "nova-manage cell_v2 create_cell --name=cell1 --verbose" nova
+# 109e1d4b-536a-40d0-83c6-5f121b82b650
+# Populate the nova database:
+#
+# # su -s /bin/sh -c "nova-manage db sync" nova
+- name : Populate the {{servicemain}} service database {{servicemain}}
+  command: su -s /bin/sh -c "{{servicemain}}-manage {{item}}" {{servicemain}}
+  loop:
+    - api_db sync
+    - cell_v2 map_cell0
+    - cell_v2 create_cell
+    - db sync
+    - cell_v2 discover_hosts --verbose
+
+- name : Restart nova services
+  systemd:
+    state: restarted
+    name: "{{ item }}"
+    enabled: yes
+    masked: no
+  loop : "{{ services }}"
