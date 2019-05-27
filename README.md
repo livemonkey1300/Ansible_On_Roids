@@ -5,7 +5,7 @@
 Most of those playbook where originally hooked to a Django Web UI , that was one off my project <br>
 If it's not order or not documented or confusing it's because it doesn't have it's database to run the script<br>
 <br>
-In the future i'm planning to rebuild the Web UI, with a better one than my original project<br>
+In the future I'm planning to rebuild the web ui, with a better one than my original project<br>
 <br>
 
 
